@@ -5,6 +5,7 @@
     "version": "0.1.0",
     "author": "Steve Zhang",
     "license": "MIT",
+    "packageManager": "yarn@1.22.22",
     "workspaces": [
       "backend",
       "frontend"

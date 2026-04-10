@@ -24,9 +24,9 @@ jobs:
       - name: Install dependencies
         run: yarn install
       - name: Check formatting
-        run: yarn format:check
+        run: cd backend && yarn format:check && cd ../frontend && npx prettier --check .
       - name: Check linting
-        run: yarn lint
+        run: cd backend && yarn lint
       - name: Run backend tests
         run: cd backend && yarn jest --testPathPattern='state\.test|promptTemplate\.test'
       - name: Run frontend tests

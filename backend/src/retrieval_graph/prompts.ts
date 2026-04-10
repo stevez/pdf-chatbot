@@ -23,4 +23,16 @@ const RESPONSE_SYSTEM_PROMPT = ChatPromptTemplate.fromMessages([
   ],
 ]);
 
-export { ROUTER_SYSTEM_PROMPT, RESPONSE_SYSTEM_PROMPT };
+const MULTI_QUERY_PROMPT = ChatPromptTemplate.fromMessages([
+  [
+    'system',
+    `You are an AI assistant that generates multiple search queries to improve document retrieval.
+Given a user question, generate 3 different versions of the question that capture different aspects or phrasings.
+Each query should approach the question from a different angle to maximize the chance of finding relevant documents.
+
+Return ONLY the 3 queries, one per line, with no numbering or prefixes.`,
+  ],
+  ['human', '{query}'],
+]);
+
+export { ROUTER_SYSTEM_PROMPT, RESPONSE_SYSTEM_PROMPT, MULTI_QUERY_PROMPT };

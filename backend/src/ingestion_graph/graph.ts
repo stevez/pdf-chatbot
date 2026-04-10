@@ -4,6 +4,7 @@
 
 import { RunnableConfig } from '@langchain/core/runnables';
 import { StateGraph, END, START } from '@langchain/langgraph';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import fs from 'fs/promises';
 
 import { IndexStateAnnotation } from './state.js';
@@ -13,6 +14,11 @@ import {
   IndexConfigurationAnnotation,
 } from './configuration.js';
 import { reduceDocs } from '../shared/state.js';
+
+const textSplitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 1000,
+  chunkOverlap: 200,
+});
 
 async function ingestDocs(
   state: typeof IndexStateAnnotation.State,
@@ -37,8 +43,11 @@ async function ingestDocs(
     docs = reduceDocs([], docs);
   }
 
+  // Split documents into smaller chunks for better retrieval
+  const splitDocs = await textSplitter.splitDocuments(docs);
+
   const retriever = await makeRetriever(config);
-  await retriever.addDocuments(docs);
+  await retriever.addDocuments(splitDocs);
 
   return { docs: 'delete' };
 }

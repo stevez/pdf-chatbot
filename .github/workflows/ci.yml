@@ -26,7 +26,7 @@ jobs:
       - name: Check formatting
         run: yarn format:check
       - name: Check linting
-        run: yarn run lint:all
+        run: yarn lint
       - name: Run backend tests
         run: cd backend && yarn jest --testPathPattern='state\.test|promptTemplate\.test'
       - name: Run frontend tests

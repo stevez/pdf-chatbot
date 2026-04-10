@@ -21,6 +21,7 @@ interface ChatMessageProps {
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
+  const [expandedSource, setExpandedSource] = useState<number | null>(null);
   const isLoading = message.role === 'assistant' && message.content === '';
 
   const handleCopy = async () => {
@@ -78,17 +79,30 @@ export function ChatMessage({ message }: ChatMessageProps) {
                       {message.sources?.map((source, index) => (
                         <Card
                           key={index}
-                          className="bg-background/50 transition-all duration-200 hover:bg-background hover:shadow-md hover:scale-[1.02] cursor-pointer"
+                          className="bg-background/50 transition-all duration-200 hover:bg-background hover:shadow-md cursor-pointer"
+                          onClick={() =>
+                            setExpandedSource(
+                              expandedSource === index ? null : index,
+                            )
+                          }
                         >
                           <CardContent className="p-3">
                             <p className="text-sm font-medium truncate">
-                              {source.metadata?.source ||
-                                source.metadata?.filename ||
-                                'N/A'}
+                              {source.metadata?.filename ||
+                                (source.metadata?.source
+                                  ? source.metadata.source
+                                      .split(/[/\\]/)
+                                      .pop()
+                                  : 'N/A')}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               Page {source.metadata?.loc?.pageNumber || 'N/A'}
                             </p>
+                            {expandedSource === index && (
+                              <p className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap border-t pt-2">
+                                {source.pageContent || 'No content available'}
+                              </p>
+                            )}
                           </CardContent>
                         </Card>
                       ))}

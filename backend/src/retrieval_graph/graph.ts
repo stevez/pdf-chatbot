@@ -100,7 +100,7 @@ async function retrieveDocuments(
     queries.map((q) => retriever.invoke(q)),
   );
 
-  // Deduplicate by page content
+  // Deduplicate by page content, preserving order (original query first)
   const seen = new Set<string>();
   const uniqueDocs = allResults.flat().filter((doc) => {
     const key = doc.pageContent;
@@ -109,7 +109,9 @@ async function retrieveDocuments(
     return true;
   });
 
-  return { documents: uniqueDocs };
+  // Cap results — original query docs are first, so most relevant are kept
+  const maxDocs = configuration.k * 2;
+  return { documents: uniqueDocs.slice(0, maxDocs) };
 }
 
 async function generateResponse(

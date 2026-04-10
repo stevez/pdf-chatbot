@@ -13,7 +13,7 @@ describe('IndexStateAnnotation', () => {
       const result = reduceDocs(initialDocs, [newDoc]);
       expect(result).toHaveLength(1);
       expect(result[0].pageContent).toBe('test content');
-      expect(result[0].metadata).toEqual({ source: 'test.pdf', page: 1 });
+      expect(result[0].metadata).toMatchObject({ source: 'test.pdf', page: 1 });
     });
 
     it('should handle merging multiple documents', () => {

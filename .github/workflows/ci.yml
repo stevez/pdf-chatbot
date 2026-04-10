@@ -22,7 +22,7 @@ jobs:
           node-version: 22.x
           cache: "yarn"
       - name: Install dependencies
-        run: yarn install --immutable --mode=skip-build
+        run: yarn install
       - name: Check formatting
         run: yarn format:check
       - name: Check linting

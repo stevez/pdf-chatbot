@@ -18,7 +18,7 @@ export const AgentStateAnnotation = Annotation.Root({
     Document[] | { [key: string]: any }[] | string[] | string | 'delete'
   >({
     default: () => [],
-    // @ts-ignore
+    // @ts-expect-error reduceDocs handles multiple input types
     reducer: reduceDocs,
   }),
 

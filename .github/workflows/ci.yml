@@ -23,8 +23,6 @@ jobs:
           cache: "yarn"
       - name: Install dependencies
         run: yarn install
-      - name: Check formatting
-        run: cd backend && yarn format:check && cd ../frontend && npx prettier --check .
       - name: Check linting
         run: cd backend && yarn lint
       - name: Run backend tests

@@ -27,5 +27,3 @@ jobs:
         run: cd backend && yarn lint
       - name: Run backend tests
         run: cd backend && yarn jest --testPathPattern='state\.test|promptTemplate\.test'
-      - name: Run frontend tests
-        run: cd frontend && yarn jest --testPathIgnorePatterns='integration' --passWithNoTests

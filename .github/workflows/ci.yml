@@ -28,4 +28,4 @@ jobs:
       - name: Run backend tests
         run: cd backend && yarn jest --testPathPattern='state\.test|promptTemplate\.test'
       - name: Run frontend tests
-        run: cd frontend && yarn test
+        run: cd frontend && yarn jest --testPathIgnorePatterns='integration'

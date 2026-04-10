@@ -53,6 +53,4 @@ const builder = new StateGraph(
   .addEdge('ingestDocs', END);
 
 // Compile into a graph object that you can invoke and deploy.
-export const graph = builder
-  .compile()
-  .withConfig({ runName: 'IngestionGraph' });
+export const graph = builder.compile();

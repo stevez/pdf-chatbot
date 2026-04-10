@@ -1,9 +1,9 @@
 {
-    "name": "ai-pdf-chatbot-langchain",
-    "description": "AI PDF chatbot template based on the book Learning LangChain (O'Reilly)",
+    "name": "pdf-chatbot",
+    "description": "AI PDF chatbot powered by LangChain and LangGraph",
     "private": true,
-    "version": "0.0.1",
-    "author": "Mayo Oshin",
+    "version": "0.1.0",
+    "author": "Steve Zhang",
     "license": "MIT",
     "workspaces": [
       "backend",

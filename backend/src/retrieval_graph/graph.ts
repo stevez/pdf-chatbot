@@ -21,7 +21,6 @@ async function checkQueryType(
   //schema for routing
   const schema = z.object({
     route: z.enum(['retrieve', 'direct']),
-    directAnswer: z.string().optional(),
   });
 
   const configuration = ensureAgentConfiguration(config);
@@ -126,6 +125,4 @@ const builder = new StateGraph(
   .addEdge('generateResponse', END)
   .addEdge('directAnswer', END);
 
-export const graph = builder.compile().withConfig({
-  runName: 'RetrievalGraph',
-});
+export const graph = builder.compile();

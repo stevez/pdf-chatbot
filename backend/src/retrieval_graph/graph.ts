@@ -4,7 +4,11 @@ import { makeRetriever } from '../shared/retrieval.js';
 import { formatDocs } from './utils.js';
 import { HumanMessage } from '@langchain/core/messages';
 import { z } from 'zod';
-import { RESPONSE_SYSTEM_PROMPT, ROUTER_SYSTEM_PROMPT } from './prompts.js';
+import {
+  RESPONSE_SYSTEM_PROMPT,
+  ROUTER_SYSTEM_PROMPT,
+  MULTI_QUERY_PROMPT,
+} from './prompts.js';
 import { RunnableConfig } from '@langchain/core/runnables';
 import {
   AgentConfigurationAnnotation,
@@ -74,10 +78,38 @@ async function retrieveDocuments(
   state: typeof AgentStateAnnotation.State,
   config: RunnableConfig,
 ): Promise<typeof AgentStateAnnotation.Update> {
+  const configuration = ensureAgentConfiguration(config);
+  const model = await loadChatModel(configuration.queryModel);
   const retriever = await makeRetriever(config);
-  const response = await retriever.invoke(state.query);
 
-  return { documents: response };
+  // Generate multiple query variants for better retrieval coverage
+  const formattedPrompt = await MULTI_QUERY_PROMPT.invoke({
+    query: state.query,
+  });
+  const queryResponse = await model.invoke(formattedPrompt.toString());
+  const queries = [
+    state.query,
+    ...String(queryResponse.content)
+      .split('\n')
+      .map((q) => q.trim())
+      .filter((q) => q.length > 0),
+  ];
+
+  // Retrieve documents for all queries in parallel
+  const allResults = await Promise.all(
+    queries.map((q) => retriever.invoke(q)),
+  );
+
+  // Deduplicate by page content
+  const seen = new Set<string>();
+  const uniqueDocs = allResults.flat().filter((doc) => {
+    const key = doc.pageContent;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return { documents: uniqueDocs };
 }
 
 async function generateResponse(

@@ -50,6 +50,7 @@
     "cmdk": "1.0.4",
     "date-fns": "^3.0.0",
     "embla-carousel-react": "8.5.1",
+    "eventsource-parser": "^3.0.6",
     "formidable": "^3.5.2",
     "geist": "latest",
     "input-otp": "1.4.1",

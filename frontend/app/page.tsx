@@ -4,6 +4,7 @@ import type React from 'react';
 
 import { useToast } from '@/hooks/use-toast';
 import { useRef, useState, useEffect } from 'react';
+import { EventSourceParserStream } from 'eventsource-parser/stream';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Paperclip, ArrowUp, Loader2 } from 'lucide-react';
@@ -104,39 +105,31 @@ export default function Home() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No reader available');
+      if (!response.body) throw new Error('No response body');
 
-      const decoder = new TextDecoder();
+      const eventStream = response.body
+        .pipeThrough(new TextDecoderStream())
+        .pipeThrough(new EventSourceParserStream());
+      const reader = eventStream.getReader();
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunkStr = decoder.decode(value);
-        const lines = chunkStr.split('\n').filter(Boolean);
+        const event = value.event || '';
+        let data: any;
+        try {
+          data = JSON.parse(value.data);
+        } catch (err) {
+          continue;
+        }
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-
-          const sseString = line.slice('data: '.length);
-          let sseEvent: any;
-          try {
-            sseEvent = JSON.parse(sseString);
-          } catch (err) {
-            console.error('Error parsing SSE line:', err, line);
-            continue;
-          }
-
-          const { event, data } = sseEvent;
-
-          if (event === 'messages/partial') {
+        if (event === 'messages/partial') {
             if (Array.isArray(data)) {
               const lastObj = data[data.length - 1];
               if (lastObj?.type === 'ai') {
                 const partialContent = lastObj.content ?? '';
 
-                // Only display if content is a string message
                 if (
                   typeof partialContent === 'string' &&
                   !partialContent.startsWith('{')
@@ -168,17 +161,11 @@ export default function Home() {
               const retrievedDocs = (data as RetrieveDocumentsNodeUpdates)
                 .retrieveDocuments.documents as PDFDocument[];
 
-              // // Handle documents here
               lastRetrievedDocsRef.current = retrievedDocs;
-              console.log('Retrieved documents:', retrievedDocs);
             } else {
-              // Clear the last retrieved documents if it's a direct answer
               lastRetrievedDocsRef.current = [];
             }
-          } else {
-            console.log('Unknown SSE event:', event, data);
           }
-        }
       }
     } catch (error) {
       console.error('Error sending message:', error);

@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/langgraph-server';
 import { retrievalAssistantStreamConfig } from '@/constants/graphConfigs';
 
 export const runtime = 'edge';
@@ -9,105 +8,57 @@ export async function POST(req: Request) {
     const { message, threadId } = await req.json();
 
     if (!message) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Message is required' }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
+      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
     if (!threadId) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Thread ID is required' }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
+      return NextResponse.json({ error: 'Thread ID is required' }, { status: 400 });
+    }
+
+    const assistantId = process.env.LANGGRAPH_RETRIEVAL_ASSISTANT_ID;
+    if (!assistantId) {
+      return NextResponse.json({ error: 'LANGGRAPH_RETRIEVAL_ASSISTANT_ID is not set' }, { status: 500 });
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
+    if (!apiUrl) {
+      return NextResponse.json({ error: 'LANGGRAPH_API_URL is not set' }, { status: 500 });
+    }
+
+    const response = await fetch(
+      `${apiUrl}/threads/${threadId}/runs/stream`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': process.env.LANGCHAIN_API_KEY || '',
         },
-      );
-    }
-
-    if (!process.env.LANGGRAPH_RETRIEVAL_ASSISTANT_ID) {
-      return new NextResponse(
-        JSON.stringify({
-          error: 'LANGGRAPH_RETRIEVAL_ASSISTANT_ID is not set',
-        }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } },
-      );
-    }
-
-    try {
-      const assistantId = process.env.LANGGRAPH_RETRIEVAL_ASSISTANT_ID;
-      const serverClient = createServerClient();
-
-      const stream = await serverClient.client.runs.stream(
-        threadId,
-        assistantId,
-        {
+        body: JSON.stringify({
+          assistant_id: assistantId,
           input: { query: message },
-          streamMode: ['messages', 'updates'],
+          stream_mode: ['messages', 'updates'],
           config: {
             configurable: {
               ...retrievalAssistantStreamConfig,
             },
           },
-        },
-      );
-
-      // Set up response as a stream
-      const encoder = new TextEncoder();
-      const customReadable = new ReadableStream({
-        async start(controller) {
-          try {
-            // Forward each chunk from the graph to the client
-            for await (const chunk of stream) {
-              // Only send relevant chunks
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
-              );
-            }
-          } catch (error) {
-            console.error('Streaming error:', error);
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ error: 'Streaming error occurred' })}\n\n`,
-              ),
-            );
-          } finally {
-            controller.close();
-          }
-        },
-      });
-
-      // Return the stream with appropriate headers
-      return new Response(customReadable, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      });
-    } catch (error) {
-      // Handle streamRun errors
-      console.error('Stream initialization error:', error);
-      return new NextResponse(
-        JSON.stringify({ error: 'Internal server error' }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
-    }
-  } catch (error) {
-    // Handle JSON parsing errors
-    console.error('Route error:', error);
-    return new NextResponse(
-      JSON.stringify({ error: 'Internal server error' }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        }),
       },
     );
+
+    if (!response.ok || !response.body) {
+      return NextResponse.json({ error: 'Failed to connect to LangGraph server' }, { status: 502 });
+    }
+
+    return new Response(response.body, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    });
+  } catch (error) {
+    console.error('Route error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
